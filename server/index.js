@@ -13,7 +13,8 @@ app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        if (origin.startsWith('http://localhost')) {
+        // In production, same-origin requests have no origin header
+        if (origin.startsWith('http://localhost') || origin.includes('onrender.com') || origin.includes('railway.app')) {
             return callback(null, true);
         }
         callback(new Error('Not allowed by CORS'));
@@ -38,6 +39,17 @@ app.use('/api/webhooks', require('./routes/webhooks'));
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', uptime: process.uptime() });
 });
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+    const clientDist = path.join(__dirname, '../client/dist');
+    app.use(express.static(clientDist));
+    
+    // SPA catch-all - AFTER all /api routes (Express 5 syntax)
+    app.get('/{*splat}', (req, res) => {
+        res.sendFile(path.join(clientDist, 'index.html'));
+    });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {

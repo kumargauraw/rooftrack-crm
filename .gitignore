@@ -27,3 +27,9 @@ yarn-error.log*
 server/roof.db
 *.sqlite
 *.sqlite3
+*.db
+*.db-wal
+*.db-shm
+rooftrack.db
+rooftrack.db-wal
+rooftrack.db-shm
