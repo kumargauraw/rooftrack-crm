@@ -113,3 +113,29 @@ CREATE INDEX IF NOT EXISTS idx_interactions_lead ON interactions(lead_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(scheduled_date);
 CREATE INDEX IF NOT EXISTS idx_jobs_lead ON jobs(lead_id);
 CREATE INDEX IF NOT EXISTS idx_messages_lead ON messages_log(lead_id);
+
+-- Bot users table for Telegram integration
+CREATE TABLE IF NOT EXISTS bot_users (
+  id TEXT PRIMARY KEY,
+  telegram_id TEXT UNIQUE,
+  telegram_username TEXT,
+  display_name TEXT,
+  role TEXT DEFAULT 'contractor',
+  approved INTEGER DEFAULT 0,
+  linked_user_id TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Reminders table for scheduled notifications
+CREATE TABLE IF NOT EXISTS reminders (
+  id TEXT PRIMARY KEY,
+  user_telegram_id TEXT,
+  lead_id TEXT,
+  remind_at DATETIME,
+  message TEXT,
+  sent INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_bot_users_telegram ON bot_users(telegram_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_due ON reminders(remind_at, sent);

@@ -8,13 +8,19 @@ const db = require('./db/database');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Serve static files in production BEFORE CORS (static files don't need CORS)
+if (process.env.NODE_ENV === 'production') {
+    const clientDist = path.join(__dirname, '../client/dist');
+    app.use(express.static(clientDist));
+}
+
 // Middleware
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        // In production, same-origin requests have no origin header
-        if (origin.startsWith('http://localhost') || origin.includes('onrender.com') || origin.includes('railway.app')) {
+        // Allow localhost, hosting platforms, and gauraw.com
+        if (origin.startsWith('http://localhost') || origin.includes('onrender.com') || origin.includes('railway.app') || origin.includes('gauraw.com')) {
             return callback(null, true);
         }
         callback(new Error('Not allowed by CORS'));
@@ -56,6 +62,16 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ success: false, error: 'Internal Server Error' });
 });
+
+// Initialize Telegram bot if token is set
+if (process.env.TELEGRAM_BOT_TOKEN) {
+    try {
+        const { startBot } = require('./bot/telegram-bot');
+        startBot(db.getDb());
+    } catch (error) {
+        console.error('Failed to start Telegram bot:', error.message);
+    }
+}
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

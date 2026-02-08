@@ -31,7 +31,24 @@ export function useUpdateLeadStatus() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['lead'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+        }
+    });
+}
+
+export function useUpdateLeadNotes() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, notes }) => {
+            const { data } = await api.patch(`/leads/${id}/notes`, { notes });
+            return data;
+        },
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['lead', variables.id] });
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['appointments'] });
         }
     });
 }
@@ -47,6 +64,7 @@ export function useCreateLead() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['leads'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+            queryClient.invalidateQueries({ queryKey: ['appointments'] });
         }
     });
 }

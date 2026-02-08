@@ -1,22 +1,43 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useLead, useUpdateLeadStatus } from '../hooks/useLeads';
+import { useLead, useUpdateLeadStatus, useUpdateLeadNotes } from '../hooks/useLeads';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-// Tabs and Separator imports removed as they were unused 
 import ActivityFeed from "@/components/ActivityFeed";
-import { Phone, Mail, MapPin, Calendar, DollarSign, ArrowLeft } from 'lucide-react';
+import { Phone, Mail, MapPin, Calendar, DollarSign, ArrowLeft, Save, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function LeadDetail() {
     const { id } = useParams();
     const { data: lead, isLoading } = useLead(id);
     const { mutate: updateStatus } = useUpdateLeadStatus();
+    const { mutate: updateNotes, isPending: isSavingNotes } = useUpdateLeadNotes();
 
     const navigate = useNavigate();
 
+    const [editingNotes, setEditingNotes] = useState(false);
+    const [notesValue, setNotesValue] = useState('');
+
+    useEffect(() => {
+        if (lead?.notes) {
+            setNotesValue(lead.notes);
+        }
+    }, [lead?.notes]);
+
     if (isLoading) return <div className="p-8">Loading detail...</div>;
     if (!lead) return <div className="p-8">Lead not found</div>;
+
+    const handleSaveNotes = () => {
+        updateNotes({ id: lead.id, notes: notesValue }, {
+            onSuccess: (data) => {
+                setEditingNotes(false);
+                if (data?.data?.autoAppointments?.length > 0) {
+                    // Could show a toast here
+                }
+            }
+        });
+    };
 
     return (
         <div className="space-y-6">
@@ -73,6 +94,49 @@ export default function LeadDetail() {
                         </CardContent>
                     </Card>
 
+                    {/* Notes Card - Editable */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <FileText className="h-4 w-4" /> Notes
+                            </CardTitle>
+                            {!editingNotes ? (
+                                <Button variant="ghost" size="sm" onClick={() => setEditingNotes(true)}>
+                                    Edit
+                                </Button>
+                            ) : (
+                                <div className="flex gap-1">
+                                    <Button variant="ghost" size="sm" onClick={() => { setEditingNotes(false); setNotesValue(lead.notes || ''); }}>
+                                        Cancel
+                                    </Button>
+                                    <Button size="sm" onClick={handleSaveNotes} disabled={isSavingNotes}>
+                                        <Save className="h-3 w-3 mr-1" />
+                                        {isSavingNotes ? 'Saving...' : 'Save'}
+                                    </Button>
+                                </div>
+                            )}
+                        </CardHeader>
+                        <CardContent>
+                            {editingNotes ? (
+                                <div className="space-y-2">
+                                    <textarea
+                                        className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        value={notesValue}
+                                        onChange={(e) => setNotesValue(e.target.value)}
+                                        placeholder="Add notes... (e.g., 'Follow up in 3 days' or 'Call on March 10th' to auto-schedule)"
+                                    />
+                                    <p className="text-xs text-slate-400">
+                                        Tip: Dates like "after 3 days", "on March 10th", or "next Monday" will auto-create appointments.
+                                    </p>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                    {lead.notes || 'No notes yet. Click Edit to add.'}
+                                </p>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-lg">Financials</CardTitle>
@@ -83,7 +147,6 @@ export default function LeadDetail() {
                                 <span className="font-semibold">${lead.estimated_value?.toLocaleString()}</span>
                             </div>
 
-                            {/* Jobs Summary */}
                             {lead.jobs && lead.jobs.length > 0 && (
                                 <div className="pt-4 border-t">
                                     <p className="font-semibold text-sm mb-2">Jobs</p>
@@ -117,6 +180,9 @@ export default function LeadDetail() {
                                                     <p className="text-xs text-muted-foreground">
                                                         {new Date(apt.scheduled_date).toLocaleDateString()} at {apt.scheduled_time}
                                                     </p>
+                                                    {apt.notes && (
+                                                        <p className="text-xs text-slate-400 mt-0.5">{apt.notes}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                             <Badge variant="secondary">{apt.status}</Badge>
