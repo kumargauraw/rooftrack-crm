@@ -9,4 +9,4 @@ services:
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        value: rooftrack-prod-secret-2026
+        sync: false  # Set manually in Render dashboard

@@ -33,3 +33,4 @@ server/roof.db
 rooftrack.db
 rooftrack.db-wal
 rooftrack.db-shm
+.env
