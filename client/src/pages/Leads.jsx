@@ -90,7 +90,11 @@ function KanbanBoard({ leads, searchTerm }) {
 
     const handleDrop = (e, targetStatus) => {
         e.preventDefault();
-        const leadId = e.dataTransfer.getData('text/plain');
+        // Try dataTransfer first, fall back to draggingId state
+        let leadId = e.dataTransfer.getData('text/plain');
+        if (!leadId && draggingId) {
+            leadId = String(draggingId);
+        }
         if (leadId) {
             const lead = leads.find(l => String(l.id) === String(leadId));
             if (lead && lead.status !== targetStatus) {
