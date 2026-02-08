@@ -46,14 +46,22 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', uptime: process.uptime() });
 });
 
-// Serve static files in production
+// SPA catch-all in production - AFTER all /api routes
 if (process.env.NODE_ENV === 'production') {
     const clientDist = path.join(__dirname, '../client/dist');
+    const indexHtml = path.join(clientDist, 'index.html');
+    
+    // Serve static again (redundant but ensures coverage after API routes)
     app.use(express.static(clientDist));
     
-    // SPA catch-all - AFTER all /api routes (Express 5 syntax)
-    app.get('/{*splat}', (req, res) => {
-        res.sendFile(path.join(clientDist, 'index.html'));
+    // SPA catch-all for client-side routing
+    app.get('/{*splat}', async (req, res, next) => {
+        try {
+            await res.sendFile(indexHtml);
+        } catch (err) {
+            console.error('SPA fallback error:', err.message);
+            next(err);
+        }
     });
 }
 
